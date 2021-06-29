@@ -1,0 +1,326 @@
+Компиляция Nginx из исходного кода в Ubuntu 20.04 LTS
+
+ Обязательные требования:
+  - Коллекция компиляторов GNU (GCC)
+  - Версия библиотеки OpenSSL между 1.0.2- 1.1.1или библиотекой LibreSSL или библиотекой BoringSSL
+  - Версия библиотеки Zlib между 1.1.3-1.2.11
+  - Версия библиотеки PCRE между 4.4-8.44
+ Дополнительные требования:
+  - Perl
+  - LibGD
+  - Библиотека MaxMind GeoIP Legacy C
+  - libxml2
+  - libxslt
+
+======================================================================================================== 
+
+1 Проверьте версию Ubuntu.
+
+lsb_release -ds
+
+========================================================================================================
+
+2 Создайте обычного пользователя с sudo доступом если вы вошли под root.
+ 
+adduser demo --gecos "Demo Demo"
+usermod -aG sudo demo
+
+========================================================================================================
+
+3 Переключитесь на нового пользователя.
+
+su - demo
+
+========================================================================================================
+
+4 Установите часовой пояс.
+
+sudo dpkg-reconfigure tzdata
+
+========================================================================================================
+
+5 Обновите программное обеспечение вашей операционной системы.
+
+sudo apt update && sudo apt upgrade -y
+
+========================================================================================================
+
+6 Установите необходимые пакеты.
+
+sudo apt install -y software-properties-common ufw
+
+========================================================================================================
+
+7 Устанавливаем build-essential, gitи tree пакеты. Данные пакеты, инструменты компиляции для языка С.
+
+sudo apt install -y build-essential git tree
+
+========================================================================================================
+
+8 Загружаем исходный код Nginx и распакуем архив исходного кода. 
+ 
+wget https://nginx.org/download/nginx-1.19.0.tar.gz && tar zxvf nginx-1.19.0.tar.gz 
+ 
+========================================================================================================
+
+9 Загрузим исходный код обязательных зависимостей Nginx и извлечем их.
+
+# PCRE version 8.44
+wget https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz && tar xzvf pcre-8.44.tar.gz
+
+# zlib version 1.2.11
+wget https://www.zlib.net/zlib-1.2.11.tar.gz && tar xzvf zlib-1.2.11.tar.gz
+
+# OpenSSL version 1.1.1g
+wget https://www.openssl.org/source/openssl-1.1.1g.tar.gz && tar xzvf openssl-1.1.1g.tar.gz 
+
+========================================================================================================
+
+10 Установим необязательные зависимости Nginx.
+ 
+sudo apt install -y perl libperl-dev libgd3 libgd-dev libgeoip1 libgeoip-dev geoip-bin libxml2 libxml2-dev libxslt1.1 libxslt1-dev
+
+========================================================================================================
+
+11 Очистим все .tar.gz файлы.
+
+rm -rf *.tar.gz
+
+========================================================================================================
+
+12 Войдите в исходный каталог Nginx.
+
+cd ~/nginx-1.19.0
+
+========================================================================================================
+
+13 Посмотрим каталоги и файлы, которые составляют исходный код Nginx с помощью tree утилиты.
+
+tree -L 2 .
+
+========================================================================================================
+
+14 Скопируем страницу руководства Nginx в /usr/share/man/man8/каталог.
+
+sudo cp ~/nginx-1.19.0/man/nginx.8 /usr/share/man/man8
+sudo gzip /usr/share/man/man8/nginx.8
+ls /usr/share/man/man8/ | grep nginx.8.gz
+ 
+# Просмотрим man страницу для работы Nginx
+man nginx
+
+========================================================================================================
+
+15 Чтобы получить справку, вы можете увидеть полный список актуальных параметров компиляции Nginx, запустив.
+
+./configure --help
+# To see want core modules can be built as dynamic run:
+./configure --help | grep -F =dynamic
+
+========================================================================================================
+
+16 Сконфигурируем, скомпилируем и установим Nginx.
+
+./configure --prefix=/etc/nginx \
+            --sbin-path=/usr/sbin/nginx \
+            --modules-path=/usr/lib/nginx/modules \
+            --conf-path=/etc/nginx/nginx.conf \
+            --error-log-path=/var/log/nginx/error.log \
+            --pid-path=/var/run/nginx.pid \
+            --lock-path=/var/run/nginx.lock \
+            --user=nginx \
+            --group=nginx \
+            --build=Ubuntu \
+            --builddir=nginx-1.19.0 \
+            --with-select_module \
+            --with-poll_module \
+            --with-threads \
+            --with-file-aio \
+            --with-http_ssl_module \
+            --with-http_v2_module \
+            --with-http_realip_module \
+            --with-http_addition_module \
+            --with-http_xslt_module=dynamic \
+            --with-http_image_filter_module=dynamic \
+            --with-http_geoip_module=dynamic \
+            --with-http_sub_module \
+            --with-http_dav_module \
+            --with-http_flv_module \
+            --with-http_mp4_module \
+            --with-http_gunzip_module \
+            --with-http_gzip_static_module \
+            --with-http_auth_request_module \
+            --with-http_random_index_module \
+            --with-http_secure_link_module \
+            --with-http_degradation_module \
+            --with-http_slice_module \
+            --with-http_stub_status_module \
+            --with-http_perl_module=dynamic \
+            --with-perl_modules_path=/usr/share/perl/5.26.1 \
+            --with-perl=/usr/bin/perl \
+            --http-log-path=/var/log/nginx/access.log \
+            --http-client-body-temp-path=/var/cache/nginx/client_temp \
+            --http-proxy-temp-path=/var/cache/nginx/proxy_temp \
+            --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
+            --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp \
+            --http-scgi-temp-path=/var/cache/nginx/scgi_temp \
+            --with-mail=dynamic \
+            --with-mail_ssl_module \
+            --with-stream=dynamic \
+            --with-stream_ssl_module \
+            --with-stream_realip_module \
+            --with-stream_geoip_module=dynamic \
+            --with-stream_ssl_preread_module \
+            --with-compat \
+            --with-pcre=../pcre-8.44 \
+            --with-pcre-jit \
+            --with-zlib=../zlib-1.2.11 \
+            --with-openssl=../openssl-1.1.1g \
+            --with-openssl-opt=no-nextprotoneg \
+            --with-debug
+
+make
+sudo make install
+
+========================================================================================================
+
+17 После компиляции перейдем в свой домашний ( ~) каталог.
+
+cd ~
+
+========================================================================================================
+
+18 Символическая ссылка /usr/lib/nginx/modulesна /etc/nginx/modules каталог. etc/nginx/modules стандартное место для модулей Nginx.
+
+sudo ln -s /usr/lib/nginx/modules /etc/nginx/modules
+
+========================================================================================================
+
+19 Посмотрим версию Nginx, версию компилятора и настройки параметра скрипта.
+
+sudo nginx -V
+
+========================================================================================================
+
+20 Создадим системную группу и пользователя Nginx.
+ 
+sudo adduser --system --home /nonexistent --shell /bin/false --no-create-home --disabled-login --disabled-password --gecos "nginx user" --group nginx
+# Check that user and group are created
+sudo tail -n 1 /etc/passwd /etc/group /etc/shadow
+
+========================================================================================================
+
+21 Проверим синтаксис Nginx и возможные ошибки.
+ 
+sudo nginx -t
+# Will throw this error -> nginx: [emerg] mkdir() "/var/cache/nginx/client_temp" failed (2: No such file or directory)
+
+# Create NGINX cache directories and set proper permissions
+sudo mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/proxy_temp /var/cache/nginx/scgi_temp /var/cache/nginx/uwsgi_temp
+sudo chmod 700 /var/cache/nginx/*
+sudo chown nginx:root /var/cache/nginx/*
+
+# Re-check syntax and potential errors. 
+sudo nginx -t
+
+========================================================================================================
+
+22 Создадим файл модуля Nginx systemd.
+
+sudo vim /etc/systemd/system/nginx.service
+
+========================================================================================================
+
+23 Скопируйте/вставьте содержимое ниже в /etc/systemd/system/nginx.service файл.
+
+[Unit]
+Description=nginx - high performance web server
+Documentation=https://nginx.org/en/docs/
+After=network-online.target remote-fs.target nss-lookup.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/nginx.pid
+ExecStartPre=/usr/sbin/nginx -t -c /etc/nginx/nginx.conf
+ExecStart=/usr/sbin/nginx -c /etc/nginx/nginx.conf
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+
+[Install]
+WantedBy=multi-user.target
+
+========================================================================================================
+
+24 Включаем Nginx для запуска при загрузке и немедленно запускаем Nginx.
+
+sudo systemctl enable nginx.service
+sudo systemctl start nginx.service
+
+========================================================================================================
+
+25 Проверяем, будет ли Nginx автоматически запускаться после перезагрузки.
+
+sudo systemctl is-enabled nginx.service
+# enabled
+
+========================================================================================================
+
+26 Проверим статус Nginx.
+
+sudo systemctl status nginx.service
+
+ПРИМЕЧАНИЕ . 
+Мы можем убедиться, что Nginx работает, перейдя в домен или IP-адрес вашего сайта в веб-браузере(localhost). 
+Вы должны увидеть страницу приветствия Nginx. Это индикатор того, что Nginx запущен на вашем VPS.
+
+========================================================================================================
+
+27 Создадим профиль приложения Uncomplicated Firewall (UFW) Nginx.
+
+sudo vim /etc/ufw/applications.d/nginx
+
+========================================================================================================
+
+28 Скопируем/вставим содержимое ниже в /etc/ufw/applications.d/nginxфайл.
+
+[Nginx HTTP]
+title=Web Server (Nginx, HTTP)
+description=Small, but very powerful and efficient web server
+ports=80/tcp
+
+[Nginx HTTPS]
+title=Web Server (Nginx, HTTPS)
+description=Small, but very powerful and efficient web server
+ports=443/tcp
+
+[Nginx Full]
+title=Web Server (Nginx, HTTP + HTTPS)
+description=Small, but very powerful and efficient web server
+ports=80,443/tcp
+
+========================================================================================================
+
+29 Убедитесь, что профили приложений UFW созданы и распознаны.
+
+sudo ufw app list
+
+# Available applications:
+  # Nginx Full
+  # Nginx HTTP
+  # Nginx HTTPS
+  # OpenSSH
+  
+========================================================================================================
+
+ 30 Nginx по умолчанию создает .defaultфайлы резервных копий в формате /etc/nginx. Удалим .default файлы 
+ из /etc/nginx каталога.
+
+sudo rm /etc/nginx/*.default
+
+========================================================================================================
+
+31 Удалим все загруженные файлы из домашнего ( ~) каталога.
+
+cd ~
+rm -rf nginx-1.19.0/ openssl-1.1.1g/ pcre-8.44/ zlib-1.2.11/
